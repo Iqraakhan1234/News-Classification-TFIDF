@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Category Classifier</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">N</span>
+        <span class="brand__name">News Categories Classifier</span>
+      </div>
+      <span class="site-header__meta">NLP Classification</span>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="context"></div>
+
+    <section class="intro">
+      <p class="intro__eyebrow">NLP TEXT CLASSIFICATION</p>
+      <h1 class="intro__title">Classify News Articles. Understand the Context.</h1>
+      <p class="intro__body">
+        An advanced NLP-based system for classifying news articles into their most likely categories using TF-IDF features and a robust machine learning model.
+      </p>
+    </section>
+
+    <section class="categories" aria-label="Available categories">
+      <ul class="category-list">
+        <li class="category-item" data-category="world">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">World</span>
+        </li>
+        <li class="category-item" data-category="sports">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">Sports</span>
+        </li>
+        <li class="category-item" data-category="business">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">Business</span>
+        </li>
+        <li class="category-item" data-category="scitech">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">Sci/Tech</span>
+        </li>
+        <li class="category-item" data-category="entertainment">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">Entertainment</span>
+        </li>
+        <li class="category-item" data-category="healthwellness">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">Health</span>
+        </li>
+        <li class="category-item" data-category="politics">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">Politics</span>
+        </li>
+        <li class="category-item" data-category="environmentclimate">
+          <span class="category-item__dot"></span>
+          <span class="category-item__label">Environment</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="classifier">
+      <div class="card classifier-card">
+        <p class="card__label">News Article Classification</p>
+
+        <form method="POST" action="{{ url_for('index') }}" id="classifierForm" novalidate>
+
+          <div class="field">
+            <label for="headline" class="field__label">Headline</label>
+            <input
+              type="text"
+              id="headline"
+              name="title"
+              class="field__input"
+              placeholder="Enter the news headline..."
+              value="{{ title }}"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="field">
+            <div class="field__label-row">
+              <label for="article" class="field__label">Article Description</label>
+              <span class="field__count" id="charCount" aria-hidden="true">0 characters</span>
+            </div>
+            <textarea
+              id="article"
+              name="news"
+              class="field__textarea"
+              placeholder="Paste or write the article description here..."
+              aria-describedby="charCount"
+            >{{ news }}</textarea>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn btn--primary">Classify article</button>
+
+            {% if prediction %}
+              <a href="{{ url_for('index') }}" class="btn btn--secondary">New article</a>
+            {% else %}
+              <button type="button" class="btn btn--secondary" id="clearBtn">Clear</button>
+            {% endif %}
+          </div>
+
+        </form>
+      </div>
+
+      {% if prediction %}
+      <div class="card result-card" id="resultCard">
+        <p class="card__label">NLP Classification Result</p>
+
+        <div class="result-main">
+          <div class="result-category-block">
+            <p class="result-category-block__label">Predicted category</p>
+            <p class="result-category" id="resultCategory">{{ prediction }}</p>
+          </div>
+
+          <div class="result-confidence-block">
+            <div class="result-confidence-block__header">
+              <span class="result-confidence-block__label">Confidence</span>
+              <span class="result-confidence-block__value">{{ confidence }}%</span>
+            </div>
+            <div class="confidence-track" role="progressbar" aria-label="Prediction confidence" aria-valuemin="0" aria-valuemax="100">
+              <div class="confidence-fill" id="confidenceFill" data-confidence="{{ confidence }}"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Word Count & Top Predictions breakdown extension -->
+        <div style="margin-top: 20px; border-top: 1px solid rgba(0, 0, 0, 0.08); padding-top: 16px;">
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 10px;">
+            <strong>Article Length:</strong> {{ word_count }} words
+          </p>
+          <p style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Top Probabilities Breakdown:</p>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for pred in top_predictions %}
+            <li style="display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: #475569; border-bottom: 1px dashed #f1f5f9;">
+              <span>{{ pred.category }}</span>
+              <span><strong>{{ pred.probability }}%</strong></span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <p class="result-footnote" style="margin-top: 16px;">Machine Learning Classifier &middot; TF-IDF Feature Extraction</p>
+      </div>
+      {% endif %}
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>News Category Classifier &mdash; a text classification tool for sorting articles into professional categories.</p>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var article = document.getElementById("article");
+      var charCount = document.getElementById("charCount");
+
+      function updateCharCount() {
+        if (!article || !charCount) return;
+        var len = article.value.length;
+        charCount.textContent = len + (len === 1 ? " character" : " characters");
+      }
+
+      if (article) {
+        updateCharCount();
+        article.addEventListener("input", updateCharCount);
+      }
+
+      var clearBtn = document.getElementById("clearBtn");
+      var headline = document.getElementById("headline");
+
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+          if (headline) headline.value = "";
+          if (article) {
+            article.value = "";
+            updateCharCount();
+            article.focus();
+          }
+        });
+      }
+
+      var confidenceFill = document.getElementById("confidenceFill");
+
+      if (confidenceFill) {
+        var confidence = parseFloat(confidenceFill.dataset.confidence);
+        var track = confidenceFill.closest(".confidence-track");
+
+        if (!isNaN(confidence)) {
+          var clamped = Math.max(0, Math.min(100, confidence));
+          if (track) track.setAttribute("aria-valuenow", String(clamped));
+
+          setTimeout(function () {
+            confidenceFill.style.width = clamped + "%";
+          }, 150);
+        }
+      }
+
+      var resultCategory = document.getElementById("resultCategory");
+      var resultCard = document.getElementById("resultCard");
+
+      function normalize(str) {
+        return (str || "").toLowerCase().replace(/[^a-z]/g, "");
+      }
+
+      if (resultCategory && resultCard) {
+        var key = normalize(resultCategory.textContent);
+        
+        resultCard.setAttribute("data-predicted", key);
+
+        var items = document.querySelectorAll(".category-item");
+        items.forEach(function (item) {
+          if (item.getAttribute("data-category") === key) {
+            item.classList.add("is-active");
+          }
+        });
+      }
+    })();
+  </script>
+
+</body>
+</html>
